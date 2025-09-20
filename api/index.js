@@ -139,14 +139,13 @@ app.get('/api/quizzes/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// POST /api/quizzes - Create a new quiz
 app.post('/api/quizzes', authenticateToken, isTeacher, async (req, res) => {
     try {
         const { title, description } = req.body;
         const newQuiz = new Quiz({
             title,
             description,
-            author: req.user.username, // Associate with the logged-in teacher
+            author: req.user.username,
             questions: []
         });
         await newQuiz.save();
@@ -157,17 +156,14 @@ app.post('/api/quizzes', authenticateToken, isTeacher, async (req, res) => {
     }
 });
 
-// PUT /api/quizzes/:id - Update a quiz's details
 app.put('/api/quizzes/:id', authenticateToken, isTeacher, async (req, res) => {
     try {
         const { title, description } = req.body;
         const updatedQuiz = await Quiz.findOneAndUpdate(
-            // Find a quiz that has the correct ID AND is owned by the logged-in teacher
             { _id: req.params.id, author: req.user.username },
             { title, description },
-            { new: true } // Return the updated document
+            { new: true }
         );
-
         if (!updatedQuiz) {
             return res.status(404).json({ message: 'Quiz not found or you do not have permission to edit it.' });
         }
@@ -178,14 +174,12 @@ app.put('/api/quizzes/:id', authenticateToken, isTeacher, async (req, res) => {
     }
 });
 
-// DELETE /api/quizzes/:id - Delete a quiz
 app.delete('/api/quizzes/:id', authenticateToken, isTeacher, async (req, res) => {
     try {
         const quiz = await Quiz.findOne({ _id: req.params.id, author: req.user.username });
         if (!quiz) {
             return res.status(404).json({ message: 'Quiz not found or you do not have permission to delete it.' });
         }
-        // Also delete any student results associated with this quiz
         await Result.deleteMany({ quizId: req.params.id });
         await Quiz.findByIdAndDelete(req.params.id);
         res.json({ message: 'Quiz and associated results deleted successfully.' });
@@ -195,7 +189,6 @@ app.delete('/api/quizzes/:id', authenticateToken, isTeacher, async (req, res) =>
     }
 });
 
-// POST /api/quizzes/:id/questions - Add a new question to a quiz
 app.post('/api/quizzes/:id/questions', authenticateToken, isTeacher, async (req, res) => {
     try {
         const quiz = await Quiz.findOne({ _id: req.params.id, author: req.user.username });
@@ -212,7 +205,6 @@ app.post('/api/quizzes/:id/questions', authenticateToken, isTeacher, async (req,
     }
 });
 
-// PUT /api/quizzes/:quizId/questions/:questionId - Update an existing question
 app.put('/api/quizzes/:quizId/questions/:questionId', authenticateToken, isTeacher, async (req, res) => {
     try {
         const { text, options, correctAnswerIndex } = req.body;
@@ -220,12 +212,10 @@ app.put('/api/quizzes/:quizId/questions/:questionId', authenticateToken, isTeach
         if (!quiz) {
             return res.status(404).json({ message: 'Quiz not found or permission denied.' });
         }
-        // Mongoose's .id() method is a convenient way to find a subdocument by its _id
         const question = quiz.questions.id(req.params.questionId);
         if (!question) {
             return res.status(404).json({ message: 'Question not found.' });
         }
-        // Update the question's properties
         question.text = text;
         question.options = options;
         question.correctAnswerIndex = correctAnswerIndex;
@@ -237,7 +227,6 @@ app.put('/api/quizzes/:quizId/questions/:questionId', authenticateToken, isTeach
     }
 });
 
-// DELETE /api/quizzes/:quizId/questions/:questionId - Delete a question from a quiz
 app.delete('/api/quizzes/:quizId/questions/:questionId', authenticateToken, isTeacher, async (req, res) => {
     try {
         const quiz = await Quiz.findOne({ _id: req.params.quizId, author: req.user.username });
@@ -246,7 +235,6 @@ app.delete('/api/quizzes/:quizId/questions/:questionId', authenticateToken, isTe
         }
         const question = quiz.questions.id(req.params.questionId);
         if (question) {
-            // Mongoose's .remove() method on a subdocument removes it from its parent array
             question.remove();
         } else {
              return res.status(404).json({ message: 'Question not found.' });
@@ -259,6 +247,20 @@ app.delete('/api/quizzes/:quizId/questions/:questionId', authenticateToken, isTe
     }
 });
 
+app.get('/api/quizzes/:id/results', authenticateToken, isTeacher, async (req, res) => {
+    try {
+        const quizId = req.params.id;
+        const quiz = await Quiz.findOne({ _id: quizId, author: req.user.username });
+        if (!quiz) {
+            return res.status(404).json({ message: 'Quiz not found or you do not have permission to view its results.' });
+        }
+        const results = await Result.find({ quizId: quizId }).sort({ studentUsername: 1 });
+        res.json(results);
+    } catch (error) {
+        console.error("Fetch Quiz Results Error:", error);
+        res.status(500).json({ message: 'Error fetching quiz results.' });
+    }
+});
 
 // RESULT ROUTES
 app.post('/api/results', authenticateToken, async (req, res) => {
@@ -266,34 +268,24 @@ app.post('/api/results', authenticateToken, async (req, res) => {
         const { quizId, answers } = req.body;
         const studentUsername = req.user.username;
 
-        console.log(`[POST /api/results] Student: ${studentUsername}, Quiz: ${quizId}`);
         const quiz = await Quiz.findById(quizId);
         if (!quiz) {
-            console.error(`[POST /api/results] Quiz not found with ID: ${quizId}`);
             return res.status(404).json({ message: 'Quiz not found' });
         }
 
         let score = 0;
         quiz.questions.forEach(question => {
-            // Using a loose equality check (==) is safer if answer values are numbers vs strings
             if (answers[question._id] == question.correctAnswerIndex) {
                 score++;
             }
         });
-        console.log(`[POST /api/results] Calculated score: ${score}/${quiz.questions.length}`);
-
-        // More robust logic: Explicitly find, then update or create.
+        
         let result = await Result.findOne({ quizId: quizId, studentUsername: studentUsername });
-
         if (result) {
-            // If result exists, update it
-            console.log(`[POST /api/results] Found existing result. Updating score.`);
             result.score = score;
             result.submittedAt = new Date();
             await result.save();
         } else {
-            // If result does not exist, create a new one
-            console.log(`[POST /api/results] No existing result found. Creating new one.`);
             result = new Result({
                 quizId: quizId,
                 studentUsername: studentUsername,
@@ -302,7 +294,6 @@ app.post('/api/results', authenticateToken, async (req, res) => {
             });
             await result.save();
         }
-        console.log(`[POST /api/results] Result saved successfully. ID: ${result._id}`);
 
         res.status(201).json({ 
             score, 
@@ -346,4 +337,3 @@ if (require.main === module) {
 
 // Export for Vercel
 module.exports = app;
-
