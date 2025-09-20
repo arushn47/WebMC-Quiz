@@ -37,8 +37,8 @@ const furtherFeedback = document.getElementById('further-feedback');
 const furtherFeedbackText = document.getElementById('further-feedback-text');
 const scoreText = document.getElementById('score-text');
 
-const API_URL = '/api';
-const QUIZ_TITLE = 'IWP Formative Assessment';
+// --- Dynamic API URL ---
+const API_URL = window.API_URL || '/api'; // fallback to relative path for Vercel
 
 let quizData = [];
 let userAnswers = {};
@@ -46,6 +46,7 @@ let currentQuestionIndex = 0;
 let score = 0;
 let answerSelected = false;
 
+// --- Event Listeners ---
 loginForm.addEventListener('submit', handleLogin);
 registerForm.addEventListener('submit', handleRegister);
 logoutBtn.addEventListener('click', handleLogout);
@@ -64,14 +65,8 @@ showLoginLink.addEventListener('click', (e) => {
 showLoginBtnNav.addEventListener('click', () => {
     loginModal.classList.add('active');
 });
-homeLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    showScreen('start');
-});
-myScoresLink.addEventListener('click', (e) => {
-    e.preventDefault();
-    showScores();
-});
+homeLink.addEventListener('click', (e) => { e.preventDefault(); showScreen('start'); });
+myScoresLink.addEventListener('click', (e) => { e.preventDefault(); showScores(); });
 backToStartBtn.addEventListener('click', () => showScreen('start'));
 startBtn.addEventListener('click', handleStartClick);
 nextBtn.addEventListener('click', nextQuestion);
@@ -79,31 +74,20 @@ restartBtn.addEventListener('click', () => showScreen('start'));
 moreInfoBtn.addEventListener('click', toggleFurtherFeedback);
 window.addEventListener('DOMContentLoaded', checkLoginStatus);
 
+// --- Core Functions ---
 function showScreen(screenName) {
-    [startScreen, quizScreen, endScreen, scoresScreen].forEach(s => {
-        if (s) s.style.display = 'none';
-    });
-
-    let screenToShow;
-    if (screenName === 'start') screenToShow = startScreen;
-    if (screenName === 'quiz') screenToShow = quizScreen;
-    if (screenName === 'end') screenToShow = endScreen;
-    if (screenName === 'scores') screenToShow = scoresScreen;
-
-    if (screenToShow) {
-        screenToShow.style.display = 'block';
-    }
+    [startScreen, quizScreen, endScreen, scoresScreen].forEach(s => { if (s) s.style.display = 'none'; });
+    const screens = { start: startScreen, quiz: quizScreen, end: endScreen, scores: scoresScreen };
+    if (screens[screenName]) screens[screenName].style.display = 'block';
 }
 
 function handleStartClick() {
     const token = localStorage.getItem('token');
-    if (token) {
-        startQuiz();
-    } else {
-        loginModal.classList.add('active');
-    }
+    if (token) startQuiz();
+    else loginModal.classList.add('active');
 }
 
+// --- Authentication ---
 async function handleRegister(e) {
     e.preventDefault();
     const username = document.getElementById('register-username').value;
@@ -121,9 +105,7 @@ async function handleRegister(e) {
         registerModal.classList.remove('active');
         checkLoginStatus();
         showScreen('start');
-    } catch (err) {
-        alert(err.message);
-    }
+    } catch (err) { alert(err.message); }
 }
 
 async function handleLogin(e) {
@@ -143,9 +125,7 @@ async function handleLogin(e) {
         loginModal.classList.remove('active');
         checkLoginStatus();
         showScreen('start');
-    } catch (err) {
-        alert(err.message);
-    }
+    } catch (err) { alert(err.message); }
 }
 
 function handleLogout() {
@@ -169,50 +149,31 @@ function checkLoginStatus() {
     }
 }
 
+// --- Scores ---
 async function showScores() {
     const token = localStorage.getItem('token');
-    if (!token) {
-        alert('You must be logged in to view scores.');
-        return;
-    }
+    if (!token) { alert('You must be logged in to view scores.'); return; }
     try {
         const res = await fetch(`${API_URL}/users/me/results`, {
             headers: { 'x-auth-token': token }
         });
         if (!res.ok) throw new Error('Could not fetch scores.');
-        
         const scores = await res.json();
         scoresContainer.innerHTML = '';
-        if (scores.length === 0) {
-            scoresContainer.innerHTML = '<p>You have not completed any quizzes yet.</p>';
-        } else {
-            scores.forEach(s => {
-                const scoreItem = document.createElement('div');
-                scoreItem.className = 'score-item';
-                
-                const quizInfo = document.createElement('div');
-                quizInfo.innerHTML = `<strong>${s.quizTitle}</strong>`;
-                
-                const scoreDetails = document.createElement('div');
-                scoreDetails.className = 'score';
-                scoreDetails.textContent = `${s.score} / ${s.totalQuestions}`;
-                
-                const dateDetails = document.createElement('div');
-                dateDetails.className = 'date';
-                dateDetails.textContent = new Date(s.completedAt).toLocaleString();
-
-                scoreItem.appendChild(quizInfo);
-                scoreItem.appendChild(scoreDetails);
-                scoreItem.appendChild(dateDetails);
-                scoresContainer.appendChild(scoreItem);
-            });
-        }
+        if (!scores.length) scoresContainer.innerHTML = '<p>You have not completed any quizzes yet.</p>';
+        else scores.forEach(s => {
+            const scoreItem = document.createElement('div');
+            scoreItem.className = 'score-item';
+            scoreItem.innerHTML = `<div><strong>${s.quizTitle}</strong></div>
+                                   <div class="score">${s.score} / ${s.totalQuestions}</div>
+                                   <div class="date">${new Date(s.completedAt).toLocaleString()}</div>`;
+            scoresContainer.appendChild(scoreItem);
+        });
         showScreen('scores');
-    } catch(err) {
-        alert(err.message);
-    }
+    } catch(err) { alert(err.message); }
 }
 
+// --- Quiz Logic (unchanged) ---
 async function startQuiz() {
     showScreen('quiz');
     try {
@@ -220,21 +181,13 @@ async function startQuiz() {
         if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
         quizData = data.questions;
-        if (quizData.length === 0) {
-            alert('Could not load the quiz. Please try again later.');
-            showScreen('start');
-            return;
-        }
-        currentQuestionIndex = 0;
-        score = 0;
-        userAnswers = {};
-        updateScoreDisplay();
-        showQuestion();
-    } catch (error) {
-        console.error('Failed to start quiz:', error);
-        showScreen('start');
-    }
+        if (!quizData.length) { alert('Could not load the quiz.'); showScreen('start'); return; }
+        currentQuestionIndex = 0; score = 0; userAnswers = {};
+        updateScoreDisplay(); showQuestion();
+    } catch (error) { console.error(error); showScreen('start'); }
 }
+
+// --- Additional quiz helper functions remain the same ---
 
 function updateProgressBar() {
     const progressPercentage = ((currentQuestionIndex) / quizData.length) * 100;
