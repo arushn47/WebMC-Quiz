@@ -2,7 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentQuiz = null;
     let currentQuestionIndex = 0;
     let score = 0;
+    let userAnswers = {};
 
+    const usernameSpan = document.getElementById('username');
     const mainDashboard = document.getElementById('main-dashboard');
     const quizView = document.getElementById('quiz-view');
     const resultView = document.getElementById('result-view');
@@ -34,18 +36,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const checkAuth = () => {
         const user = getUser();
-        if (!user || !getAuthToken() || user.role !== 'student') {
+        const token = getAuthToken();
+        if (!token || !user || user.role !== 'student') {
             window.location.href = '/index.html';
             return false;
         }
-        document.getElementById('user-greeting').textContent = `Welcome, ${user.username}!`;
+        usernameSpan.textContent = user.username;
         return true;
     };
     
     const fetchApi = async (url, options = {}) => {
         const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}`, ...options.headers };
         const response = await fetch(url, { ...options, headers });
-        if (!response.ok) { throw new Error(await response.json().then(d => d.message)); }
+        if (!response.ok) { 
+            const errorData = await response.json().catch(() => ({ message: 'An unknown server error occurred.' }));
+            throw new Error(errorData.message); 
+        }
         return response.json();
     };
 
@@ -84,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!currentQuiz.questions || currentQuiz.questions.length === 0) { throw new Error('This quiz has no questions.'); }
             currentQuestionIndex = 0;
             score = 0;
+            userAnswers = {};
             hide(mainDashboard);
             hide(resultView);
             show(quizView);
@@ -210,3 +217,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
