@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const renderQuizzes = () => {
         quizzesContainer.innerHTML = '';
         if (quizzes.length === 0) {
-            quizzesContainer.innerHTML = `<div class="text-center text-gray-500 py-8 col-span-full bg-white rounded-lg shadow-md"><p>No quizzes created yet. Use the form on the left to get started.</p></div>`;
+            quizzesContainer.innerHTML = `<div class="text-center text-gray-500 py-8 col-span-full bg-white rounded-lg shadow-md"><p>No quizzes created yet.</p></div>`;
             return;
         }
         quizzes.forEach(quiz => {
@@ -95,21 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button data-action="delete-quiz" data-quiz-id="${quiz._id}" class="col-span-2 w-full text-sm font-semibold bg-red-100 text-red-800 py-2 px-4 rounded-md hover:bg-red-200">Delete Quiz</button>
                     </div>
                 </div>
-                <details id="details-${quiz._id}" class="bg-gray-50">
-                    <summary class="hidden"></summary>
-                    <div class="border-t border-gray-200">
-                        <div class="border-b border-gray-200">
-                            <nav class="-mb-px flex space-x-6 px-6" aria-label="Tabs">
-                                <button data-action="show-tab" data-tab="questions" data-quiz-id="${quiz._id}" class="tab-button active shrink-0 border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">Questions</button>
-                                <button data-action="show-tab" data-tab="results" data-quiz-id="${quiz._id}" class="tab-button shrink-0 border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">Student Results</button>
-                            </nav>
-                        </div>
-                        <div class="p-6">
-                            <div id="questions-panel-${quiz._id}" class="tab-panel"></div>
-                            <div id="results-panel-${quiz._id}" class="tab-panel hidden"></div>
-                        </div>
-                    </div>
-                </details>
+                <details id="details-${quiz._id}" class="bg-gray-50"><summary class="hidden"></summary><div class="border-t border-gray-200"><div class="border-b border-gray-200"><nav class="-mb-px flex space-x-6 px-6"><button data-action="show-tab" data-tab="questions" data-quiz-id="${quiz._id}" class="tab-button active shrink-0 border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">Questions</button><button data-action="show-tab" data-tab="results" data-quiz-id="${quiz._id}" class="tab-button shrink-0 border-b-2 border-transparent px-1 py-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">Student Results</button></nav></div><div class="p-6"><div id="questions-panel-${quiz._id}" class="tab-panel"></div><div id="results-panel-${quiz._id}" class="tab-panel hidden"></div></div></div></details>
             `;
             quizzesContainer.appendChild(quizCard);
         });
@@ -120,10 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById(`questions-panel-${quizId}`);
         if (!quiz || !container) return;
         container.innerHTML = '';
-        if (quiz.questions.length === 0) {
-            container.innerHTML = `<p class="text-sm text-gray-500">No questions added yet.</p>`;
-            return;
-        }
+        if (quiz.questions.length === 0) { container.innerHTML = `<p class="text-sm text-gray-500">No questions added yet.</p>`; return; }
         quiz.questions.forEach((q, index) => {
             const questionEl = document.createElement('div');
             questionEl.className = 'p-3 border-b border-gray-100 last:border-b-0 flex justify-between items-center';
@@ -138,14 +121,9 @@ document.addEventListener('DOMContentLoaded', () => {
         container.innerHTML = `<p class="text-sm text-gray-500">Loading results...</p>`;
         try {
             const results = await fetchApi(`/api/quizzes/${quizId}/results`);
-            if (results.length === 0) {
-                container.innerHTML = `<p class="text-sm text-gray-500">No students have taken this quiz yet.</p>`;
-                return;
-            }
-            let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Score</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date & Time Submitted</th></tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
-            results.forEach(result => {
-                tableHtml += `<tr><td class="px-4 py-2 text-sm text-gray-900">${escapeHTML(result.studentUsername)}</td><td class="px-4 py-2 text-sm text-gray-500">${result.score} / ${result.totalQuestions}</td><td class="px-4 py-2 text-sm text-gray-500">${new Date(result.submittedAt).toLocaleString()}</td></tr>`;
-            });
+            if (results.length === 0) { container.innerHTML = `<p class="text-sm text-gray-500">No students have taken this quiz yet.</p>`; return; }
+            let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Score</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th></tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
+            results.forEach(result => { tableHtml += `<tr><td class="px-4 py-2 text-sm text-gray-900">${escapeHTML(result.studentUsername)}</td><td class="px-4 py-2 text-sm text-gray-500">${result.score} / ${result.totalQuestions}</td><td class="px-4 py-2 text-sm text-gray-500">${new Date(result.submittedAt).toLocaleString()}</td></tr>`; });
             tableHtml += `</tbody></table></div>`;
             container.innerHTML = tableHtml;
         } catch (error) {
@@ -153,9 +131,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const populateAddQuestionForm = () => { addQuestionForm.innerHTML = `<div><label class="block text-sm font-medium text-gray-700">Question Text</label><input type="text" name="text" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div><div><label class="block text-sm font-medium text-gray-700">Options & Correct Answer</label>${[0,1,2,3].map(i=>`<div class="flex items-center space-x-2 mt-2"><input type="radio" name="correctAnswerIndex" value="${i}" required class="h-4 w-4 text-indigo-600"><input type="text" name="options" required class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>`).join('')}</div><div class="pt-4 flex justify-end space-x-2"><button type="button" data-action="close-modal" class="px-4 py-2 bg-gray-200 rounded-md">Cancel</button><button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Add Question</button></div>`; };
+    const populateAddQuestionForm = () => { addQuestionForm.innerHTML = `<div><label class="block text-sm font-medium text-gray-700">Question Text</label><input type="text" name="text" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div><div><label class="block text-sm font-medium text-gray-700">Options & Correct Answer</label>${[0,1,2,3].map(i=>`<div class="flex items-center space-x-2 mt-2"><input type="radio" name="correctAnswerIndex" value="${i}" required class="h-4 w-4 text-indigo-600"><input type="text" name="options" required class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div>`).join('')}</div><div><label class="block text-sm font-medium text-gray-700">Explanation for Correct Answer</label><textarea name="feedback" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm" placeholder="Explain why the answer is correct."></textarea></div><div class="pt-4 flex justify-end space-x-2"><button type="button" data-action="close-modal" class="px-4 py-2 bg-gray-200 rounded-md">Cancel</button><button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Add Question</button></div>`; };
     const populateEditQuizForm = (quiz) => { editQuizForm.innerHTML = `<div><label class="block text-sm font-medium text-gray-700">Quiz Title</label><input type="text" name="title" value="${escapeHTML(quiz.title)}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div><div><label class="block text-sm font-medium text-gray-700">Description</label><textarea name="description" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">${escapeHTML(quiz.description||'')}</textarea></div><div class="pt-4 flex justify-end space-x-2"><button type="button" data-action="close-modal" class="px-4 py-2 bg-gray-200 rounded-md">Cancel</button><button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Save Changes</button></div>`; };
-    const populateEditQuestionForm = (question) => { editQuestionForm.innerHTML = `<div><label class="block text-sm font-medium text-gray-700">Question Text</label><input type="text" name="text" value="${escapeHTML(question.text)}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div><div><label class="block text-sm font-medium text-gray-700">Options & Correct Answer</label>${question.options.map((opt,i)=>`<div class="flex items-center space-x-2 mt-2"><input type="radio" name="correctAnswerIndex" value="${i}" ${i===question.correctAnswerIndex?'checked':''} required class="h-4 w-4 text-indigo-600"><input type="text" name="options" value="${escapeHTML(opt)}" required class="block w-full rounded-md border-gray-300 shadow-sm"></div>`).join('')}</div><div class="pt-4 flex justify-end space-x-2"><button type="button" data-action="close-modal" class="px-4 py-2 bg-gray-200 rounded-md">Cancel</button><button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Save Changes</button></div>`; };
+    const populateEditQuestionForm = (question) => { editQuestionForm.innerHTML = `<div><label class="block text-sm font-medium text-gray-700">Question Text</label><input type="text" name="text" value="${escapeHTML(question.text)}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm"></div><div><label class="block text-sm font-medium text-gray-700">Options & Correct Answer</label>${question.options.map((opt,i)=>`<div class="flex items-center space-x-2 mt-2"><input type="radio" name="correctAnswerIndex" value="${i}" ${i===question.correctAnswerIndex?'checked':''} required class="h-4 w-4 text-indigo-600"><input type="text" name="options" value="${escapeHTML(opt)}" required class="block w-full rounded-md border-gray-300 shadow-sm"></div>`).join('')}</div><div><label class="block text-sm font-medium text-gray-700">Explanation for Correct Answer</label><textarea name="feedback" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm sm:text-sm">${escapeHTML(question.feedback || '')}</textarea></div><div class="pt-4 flex justify-end space-x-2"><button type="button" data-action="close-modal" class="px-4 py-2 bg-gray-200 rounded-md">Cancel</button><button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md">Save Changes</button></div>`; };
 
     const handlePageClick = (e) => {
         const target = e.target.closest('button');
@@ -167,10 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'toggle-details':
                 const detailsElement = document.getElementById(`details-${quizId}`);
                 if (detailsElement) {
-                    if (detailsElement.open) {
-                        detailsElement.open = false;
-                        target.textContent = 'View Details';
-                    } else {
+                    if (detailsElement.open) { detailsElement.open = false; target.textContent = 'View Details'; }
+                    else {
                         const quizCard = target.closest('.bg-white.shadow-lg');
                         quizCard.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
                         quizCard.querySelector('.tab-button[data-tab="questions"]').classList.add('active');
@@ -189,14 +165,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 target.classList.add('active');
                 quizCard.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
                 show(quizCard.querySelector(`#${tab}-panel-${quizId}`));
-                if (tab === 'results') renderResultsForQuiz(quizId);
-                else renderQuestionsForQuiz(quizId);
+                if (tab === 'results') renderResultsForQuiz(quizId); else renderQuestionsForQuiz(quizId);
                 break;
             case 'add-question': currentQuizId = quizId; populateAddQuestionForm(); show(addQuestionModal); break;
             case 'edit-quiz': currentQuizId = quizId; const qte = quizzes.find(q=>q._id===quizId); populateEditQuizForm(qte); show(editQuizModal); break;
-            case 'delete-quiz': showConfirmModal('Are you sure you want to delete this quiz?', ()=>handleDeleteQuiz(quizId)); break;
+            case 'delete-quiz': showConfirmModal('Delete this quiz?', ()=>handleDeleteQuiz(quizId)); break;
             case 'edit-question': currentQuizId = quizId; currentQuestionId = questionId; const qfe = quizzes.find(q=>q._id===quizId); const qtte = qfe.questions.find(q=>q._id===questionId); populateEditQuestionForm(qtte); show(editQuestionModal); break;
-            case 'delete-question': showConfirmModal('Are you sure you want to delete this question?', ()=>handleDeleteQuestion(quizId,questionId)); break;
+            case 'delete-question': showConfirmModal('Delete this question?', ()=>handleDeleteQuestion(quizId,questionId)); break;
             case 'close-modal': hide(addQuestionModal); hide(editQuizModal); hide(editQuestionModal); break;
         }
     };
@@ -210,23 +185,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 const description = form.elements['quiz-description'].value;
                 await fetchApi('/api/quizzes', { method: 'POST', body: JSON.stringify({ title, description }) });
                 form.reset();
-            } else if (form.id === 'add-question-form') {
+            } else if (form.id === 'add-question-form' || form.id === 'edit-question-form') {
                 const text = form.elements.text.value;
                 const options = Array.from(form.elements.options).map(i => i.value);
                 const correctAnswerIndex = form.elements.correctAnswerIndex.value;
-                await fetchApi(`/api/quizzes/${currentQuizId}/questions`, { method: 'POST', body: JSON.stringify({ text, options, correctAnswerIndex }) });
-                hide(addQuestionModal);
+                const feedback = form.elements.feedback.value;
+                const body = { text, options, correctAnswerIndex, feedback };
+
+                if (form.id === 'add-question-form') {
+                    await fetchApi(`/api/quizzes/${currentQuizId}/questions`, { method: 'POST', body: JSON.stringify(body) });
+                    hide(addQuestionModal);
+                } else {
+                    await fetchApi(`/api/quizzes/${currentQuizId}/questions/${currentQuestionId}`, { method: 'PUT', body: JSON.stringify(body) });
+                    hide(editQuestionModal);
+                }
             } else if (form.id === 'edit-quiz-form') {
                 const title = form.elements.title.value;
                 const description = form.elements.description.value;
                 await fetchApi(`/api/quizzes/${currentQuizId}`, { method: 'PUT', body: JSON.stringify({ title, description }) });
                 hide(editQuizModal);
-            } else if (form.id === 'edit-question-form') {
-                const text = form.elements.text.value;
-                const options = Array.from(form.elements.options).map(i => i.value);
-                const correctAnswerIndex = form.elements.correctAnswerIndex.value;
-                await fetchApi(`/api/quizzes/${currentQuizId}/questions/${currentQuestionId}`, { method: 'PUT', body: JSON.stringify({ text, options, correctAnswerIndex }) });
-                hide(editQuestionModal);
             }
             await loadInitialData();
         } catch (error) {
